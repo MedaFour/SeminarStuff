@@ -22,6 +22,9 @@ rule simulate_reads:
     input:
        rules.mutate_sequence.output
     output:
-       'results/{sample}_mut_mspe'
+       'results/{sample}_mut_mspe1.fq',
+       'results/{sample}_mut_mspe2.fq'
+    conda:
+       'envs/art.yaml'
     shell:
-       'art_illumina -i {input} -ss MSv3 -l 150 -f 10 -m 300 -s 30 -o {output} -na'
+       'art_illumina -i {input} -ss MSv3 -l 150 -f 10 -m 300 -s 30 -o results/{wildcards.sample}_mut_mspe -na'
