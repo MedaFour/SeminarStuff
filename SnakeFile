@@ -1,0 +1,27 @@
+configfile: "config.yaml"
+
+rule fetch_data:
+    output:
+       'data/{sample}.fna'
+    conda:
+       'envs/edirect.yaml'
+    shell:
+       'efetch -db nuccore -format fasta -id {config[id]} > {output}'
+
+rule mutate_sequence:
+    input:
+       rules.fetch_data.output
+    output:
+       'results/{sample}_mut.fna'
+    conda:
+       'envs/emboss.yaml'
+    shell:
+       'msbar -sequence {input} -outseq {output} -codon 0 -count 10 -point 4 -block 0'
+
+rule simulate_reads:
+    input:
+       rules.mutate_sequence.output
+    output:
+       'results/{sample}_mut_mspe'
+    shell:
+       'art_illumina -i {input} -ss MSv3 -l 150 -f 10 -m 300 -s 30 -o {output} -na'
