@@ -28,3 +28,43 @@ rule simulate_reads:
        'envs/art.yaml'
     shell:
        'art_illumina -i {input} -ss MSv3 -l 150 -f 10 -m 300 -s 30 -o results/{wildcards.sample}_mut_mspe -na'
+
+rule mapping_reads:
+    input:
+       read0 = rules.simulate_reads.output[0],
+       read1 = rules.simulate_reads.output[1],
+       seq = rules.fetch_data.output
+    output:
+       'results/{sample}_mut_mspe.sam'
+    conda:
+       'envs/bwa.yaml'
+    shell:
+       '''
+       bwa index {input.seq} &&
+       bwa mem {input.seq} {input.read0} {input.read1} >{output}
+       '''
+rule sam_to_bam:
+    input:
+       rules.mapping_reads.output
+    output:
+       sortedbam ='results/{sample}_mut_mspe.sortedbam',
+       bam ='results/{sample}_mut_mspe.bam'
+    conda:
+       'envs/samtools.yaml'
+    shell:
+       '''
+       samtools view -b {input} -o {output.bam} &&
+       samtools sort -o {output.sortedbam} {output.bam}
+       '''
+rule pileup:
+    input:
+       sortedbam = rules.sam_to_bam.output.sortedbam
+       seq = rules.fetch_data.output
+    output:
+       'results/{sample}_mut_mspe.mpileup'
+    conda:
+       'envs/samtools.yaml'
+    shell:
+       '''
+       samtools index {input.sortedbam} &&
+       samtools mpileup -f {input.seq} -C 5 -o ecoli_mut_mspe.mpileup ecoli_mut_mspe.sortedbam
