@@ -58,7 +58,7 @@ rule sam_to_bam:
        '''
 rule pileup:
     input:
-       sortedbam = rules.sam_to_bam.output.sortedbam
+       sortedbam = rules.sam_to_bam.output.sortedbam,
        seq = rules.fetch_data.output
     output:
        'results/{sample}_mut_mspe.mpileup'
@@ -67,4 +67,15 @@ rule pileup:
     shell:
        '''
        samtools index {input.sortedbam} &&
-       samtools mpileup -f {input.seq} -C 5 -o ecoli_mut_mspe.mpileup ecoli_mut_mspe.sortedbam
+       samtools mpileup -f {input.seq} -C 5 -o {output} {input.sortedbam}
+       '''
+
+rule pileup_to_snp:
+    input:
+       rules.pileup.output
+    output:
+       'results/{sample}_mut_mspe.snp'
+    conda:
+       'envs/varscan.yaml'
+    shell:
+       'varscan mpileup2snp {input} > {output}'
