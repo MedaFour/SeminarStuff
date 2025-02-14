@@ -1,12 +1,21 @@
 configfile: "config.yaml"
+SAMPLES = config["edirect"]["samples"]  # Load the sample dictionary
+
+rule all:
+    input:
+       expand("results/{sample}_mut_mspe.snp", sample=SAMPLES.keys()),
 
 rule fetch_data:
     output:
        'data/{sample}.fna'
+    params:
+        id=lambda wildcards: SAMPLES[wildcards.sample]
     conda:
        'envs/edirect.yaml'
     shell:
-       'efetch -db nuccore -format fasta -id {config[id]} > {output}'
+       'efetch -db nuccore -format {config[edirect][format]} '
+       '-id {params.id} |'
+       'head -n {config[edirect][subset_size]} > {output}'
 
 rule mutate_sequence:
     input:
@@ -16,7 +25,11 @@ rule mutate_sequence:
     conda:
        'envs/emboss.yaml'
     shell:
-       'msbar -sequence {input} -outseq {output} -codon 0 -count 10 -point 4 -block 0'
+       'msbar -sequence {input} -outseq {output} ' 
+       '-codon {config[emboss][codon]} '
+       '-count {config[emboss][count]} ' 
+       '-point {config[emboss][point]} '
+       '-block {config[emboss][block]} '
 
 rule simulate_reads:
     input:
@@ -27,7 +40,12 @@ rule simulate_reads:
     conda:
        'envs/art.yaml'
     shell:
-       'art_illumina -i {input} -ss MSv3 -l 150 -f 10 -m 300 -s 30 -o results/{wildcards.sample}_mut_mspe -na'
+       'art_illumina -i {input} -ss {config[art][seq_sys]} ' 
+       '-l {config[art][read_length]} '
+       '-f {config[art][coverage]} '
+       '-m {config[art][fragment_mean]} '
+       '-s {config[art][fragment_std]} '
+       '-o results/{wildcards.sample}_mut_mspe -na'
 
 rule mapping_reads:
     input:
@@ -67,7 +85,7 @@ rule pileup:
     shell:
        '''
        samtools index {input.sortedbam} &&
-       samtools mpileup -f {input.seq} -C 5 -o {output} {input.sortedbam}
+       samtools mpileup -f {input.seq} -C {config[pileup][adjustment]} -o {output} {input.sortedbam}
        '''
 
 rule pileup_to_snp:

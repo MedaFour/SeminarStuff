@@ -1,2 +1,24 @@
-id: NC_000913
+edirect:
+  samples:
+    ecoli: NC_000913
+    salmonella: NC_002695
+    shigella: NC_011750
+  subset_size: 1000  # Number of FASTA lines
+  format: fasta  # Output format
+
+emboss:
+  codon: 0
+  count: 10
+  point: 4
+  block: 0
+
+art:
+  seq_sys: MSv3   # Sequencing system
+  read_length: 150
+  coverage: 10
+  fragment_mean: 300
+  fragment_std: 30
+
+pileup:
+  adjustment: 5   # -C parameter in samtools mpileup
 
